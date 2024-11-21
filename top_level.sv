@@ -10,6 +10,7 @@ module top_level (
     logic [1:0] random_seq;
     logic       start_round, display_loss;
     logic       correct_input, end_of_sequence;
+    logic [9:0] frequency;
 
     // Instantiate Random Sequence Generator
     Random_Sequence_Generator rng (
@@ -26,10 +27,20 @@ module top_level (
         .random_seq(random_seq),
         .led(LED),
         .sound(SOUND),
+        .frequency(frequency), // Connect FSM frequency output
         .start_round(start_round),
         .display_loss(display_loss),
         .correct_input(correct_input),
         .end_of_sequence(end_of_sequence)
+    );
+
+    // Instantiate Tone Generator
+    Tone_Generator tone_gen (
+        .clk(CLK),
+        .rst(RST),
+        .frequency(frequency),       // Receive frequency from FSM
+        .ticks_per_milli(50),        // Adjust ticks per millisecond as needed
+        .sound(SOUND)                // Output sound signal
     );
 
     // Instantiate LED and 7-Segment Display Control
