@@ -1,21 +1,47 @@
-// Top-Level Module
-module simon_says_top (
-    input logic clk,             // Clock signal
-    input logic rst,             // Reset signal
-    input logic btn[3:0],        // Button inputs
-    output logic led[3:0],       // LED outputs
-    output logic sound           // Sound output
+module top_level (
+    input  logic        CLK,
+    input  logic        RST,
+    input  logic [3:0]  BTN,
+    output logic [3:0]  LED,
+    output logic [6:0]  SEG_DISPLAY,
+    output logic        SOUND
 );
 
-    logic [15:0] ticks_per_ms = 50; // Clock ticks per millisecond
+    logic [1:0] random_seq;
+    logic       start_round, display_loss;
+    logic       correct_input, end_of_sequence;
 
-    simon_game game_inst (
-        .clk(clk),
-        .rst(rst),
-        .ticks_per_ms(ticks_per_ms),
-        .btn_inputs(btn),
-        .led_outputs(led),
-        .sound_output(sound)
+    // Instantiate Random Sequence Generator
+    Random_Sequence_Generator rng (
+        .clk(CLK),
+        .rst(RST),
+        .random_seq(random_seq)
+    );
+
+    // Instantiate FSM
+    fsm fsm_inst (
+        .clk(CLK),
+        .rst(RST),
+        .btn(BTN),
+        .random_seq(random_seq),
+        .led(LED),
+        .sound(SOUND),
+        .start_round(start_round),
+        .display_loss(display_loss),
+        .correct_input(correct_input),
+        .end_of_sequence(end_of_sequence)
+    );
+
+    // Instantiate LED and 7-Segment Display Control
+    LED_and_Display_Control led_disp_ctrl (
+        .clk(CLK),
+        .rst(RST),
+        .seq_led(LED),
+        .user_input(BTN),
+        .display_loss(display_loss),
+        .score(seq_length),
+        .led(LED),
+        .seg_display(SEG_DISPLAY)
     );
 
 endmodule
