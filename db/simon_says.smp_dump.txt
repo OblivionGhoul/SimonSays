@@ -1,0 +1,11 @@
+
+State Machine - |top_level|fsm:simon1|state
+Name state.StateGameOver state.StateNextLevel state.StateUserInput state.StateUserWait state.StatePlayWait state.StatePlay state.StateInit state.StatePowerOn 
+state.StatePowerOn 0 0 0 0 0 0 0 0 
+state.StateInit 0 0 0 0 0 0 1 1 
+state.StatePlay 0 0 0 0 0 1 0 1 
+state.StatePlayWait 0 0 0 0 1 0 0 1 
+state.StateUserWait 0 0 0 1 0 0 0 1 
+state.StateUserInput 0 0 1 0 0 0 0 1 
+state.StateNextLevel 0 1 0 0 0 0 0 1 
+state.StateGameOver 1 0 0 0 0 0 0 1 
