@@ -5,6 +5,7 @@ module fsm (
     input  logic [1:0]  random_seq,
     output logic [3:0]  led,
     output logic        sound,
+    output logic [9:0]  frequency,  // New output to control tone frequency
     output logic        start_round,
     output logic        display_loss,
     input  logic        correct_input,
@@ -25,6 +26,13 @@ module fsm (
     logic [4:0] seq_length;
     logic [4:0] seq_counter;
 
+    // Game tone frequencies
+    logic [9:0] GAME_TONES [3:0];
+    assign GAME_TONES[0] = 196;  // G3
+    assign GAME_TONES[1] = 262;  // C4
+    assign GAME_TONES[2] = 330;  // E4
+    assign GAME_TONES[3] = 784;  // G5
+
     always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             state       <= STATE_POWER_ON;
@@ -39,8 +47,8 @@ module fsm (
         // Default outputs
         start_round  = 0;
         display_loss = 0;
+        frequency    = 0;
         led          = 4'b0000;
-        sound        = 0;
         next_state   = state;
 
         case (state)
@@ -57,7 +65,7 @@ module fsm (
 
             STATE_PLAY_SEQUENCE: begin
                 led[random_seq] = 1;
-                sound = 1; // Emit tone for the current sequence LED
+                frequency = GAME_TONES[random_seq]; // Assign frequency to current tone
                 if (end_of_sequence) next_state = STATE_WAIT_INPUT;
             end
 
@@ -66,6 +74,7 @@ module fsm (
             end
 
             STATE_VALIDATE_INPUT: begin
+                frequency = GAME_TONES[btn]; // Emit tone for user input
                 if (correct_input) begin
                     if (seq_counter == seq_length - 1) 
                         next_state = STATE_NEXT_ROUND;
@@ -84,6 +93,7 @@ module fsm (
 
             STATE_GAME_OVER: begin
                 display_loss = 1;
+                frequency = 0; // Silence during game over
                 if (btn != 4'b0000) next_state = STATE_POWER_ON;
             end
         endcase
