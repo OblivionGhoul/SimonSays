@@ -1,4 +1,3 @@
-
 module Tone_Generator (
     input  logic        clk,
     input  logic        rst,
