@@ -1,0 +1,121 @@
+module tb_memory;
+
+	// Parameters
+	parameter SEQ_LENGTH = 16;
+	parameter DATA_WIDTH = 4;
+
+	// Testbench signals
+	logic clk;
+	logic reset;
+	logic write_enable;
+	logic [$clog2(SEQ_LENGTH)-1:0] write_address, read_address;
+	logic [DATA_WIDTH-1:0] write_data, read_data;
+
+	// Instantiate the DUT (Device Under Test)
+	memory_module #(
+		.SEQ_LENGTH(SEQ_LENGTH),
+		.DATA_WIDTH(DATA_WIDTH)
+	) dut (
+		.clk(clk),
+		.reset(reset),
+		.write_enable(write_enable),
+		.write_address(write_address),
+		.write_data(write_data),
+		.read_enable(read_enable),
+		.read_address(read_address),
+		.read_data(read_data)
+	);
+
+	// Clock generation
+	initial clk = 0;
+	always #5 clk = ~clk; // 10ns clock period
+
+	// Testbench variables
+	logic [DATA_WIDTH-1:0] mem_model [SEQ_LENGTH-1:0]; // Reference model
+
+	// Task: Reset the memory
+	task reset_memory();
+		begin
+			reset = 1;
+			@(posedge clk);
+			reset = 0;
+			@(posedge clk);
+			// Verify memory initialization
+			for (int i = 0; i < SEQ_LENGTH; i++) begin
+				assert(dut.memory_array[i] == '0) else $error("Reset failed at address %0d", i);
+				mem_model[i] = '0;
+			end
+		end
+	endtask
+
+	// Task: Write a value to memory
+	task write_to_memory(input [$clog2(SEQ_LENGTH)-1:0] addr, input [DATA_WIDTH-1:0] data);
+		begin
+			write_enable = 1;
+			write_address = addr;
+			write_data = data;
+			@(posedge clk);
+			write_enable = 0;
+			@(posedge clk);
+			// Update reference model
+			mem_model[addr] = data;
+		end
+	endtask
+
+	// Task: Read a value from memory and check against the model
+	task read_from_memory(input [$clog2(SEQ_LENGTH)-1:0] addr);
+		begin
+			read_enable = 1;
+			read_address = addr;
+			@(posedge clk);
+			read_enable = 0;
+			// Check against reference model
+			assert(read_data == mem_model[addr]) else $error("Read mismatch at address %0d: Expected %0d, Got %0d", addr, mem_model[addr], read_data);
+		end
+	endtask
+
+	// Task: Randomized test sequence
+	task random_test(input int num_operations);
+		begin
+			for (int i = 0; i < num_operations; i++) begin
+				// Generate random address and data
+				logic [$clog2(SEQ_LENGTH)-1:0] rand_addr = $urandom % SEQ_LENGTH;
+				logic [DATA_WIDTH-1:0] rand_data = $urandom % (2 ** DATA_WIDTH);
+
+				// 50% chance to write or read
+				if ($urandom % 2) begin
+					write_to_memory(rand_addr, rand_data);
+				end else begin
+					read_from_memory(rand_addr);
+				end
+			end
+		end
+	endtask
+
+	// Main testbench sequence
+	initial begin
+		// Initialize signals
+		reset = 0;
+		write_enable = 0;
+		read_enable = 0;
+		write_address = '0;
+		write_data = '0;
+		read_address = '0;
+
+		// Perform reset
+		reset_memory();
+
+		// Write specific values to memory and verify
+		write_to_memory(5, 4'b1010);
+		write_to_memory(10, 4'b1100);
+		read_from_memory(5);
+		read_from_memory(10);
+
+		// Run randomized test sequence
+		random_test(100);
+
+		$display("All tests passed!");
+		$finish;
+	end
+
+endmodule
